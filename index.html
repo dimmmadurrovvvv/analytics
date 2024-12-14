@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <!-- Позволяем контенту занимать всю ширину, viewport-fit=cover для iOS fullscreen -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>График подписчиков</title>
   <style>
@@ -13,7 +12,7 @@
       background: #121212;
       color: #fff;
       height: 100%;
-      overflow: hidden; /* чтобы не было лишних скроллов страницы */
+      overflow: hidden;
     }
 
     body {
@@ -28,7 +27,6 @@
       padding: 10px;
       background: #1f1f1f;
       font-size: 16px;
-      /* фиксированная высота для расчёта */
       height: 50px;
       box-sizing: border-box;
     }
@@ -45,13 +43,12 @@
       font-size: 16px;
     }
 
-    /* Основной контейнер: занимает оставшуюся часть экрана */
     .chart-layout {
       flex: 1; 
       display: flex;
       flex-direction: row;
       background: #1e1e1e;
-      height: calc(100vh - 50px); /* высота экрана минус панель */
+      height: calc(100vh - 50px);
       box-sizing: border-box;
     }
 
@@ -115,7 +112,7 @@
 </div>
 
 <script>
-// Пример данных
+// Пример данных: на 24 часа
 const data = [];
 for (let h = 0; h < 24; h++) {
   const hour = h.toString().padStart(2, '0') + ":00";
@@ -125,19 +122,15 @@ for (let h = 0; h < 24; h++) {
 
 const chartContainer = document.querySelector('.chart-container');
 const svg = document.getElementById("chart");
-
-// Найдём максимум
 const maxValue = Math.max(...data.map(d => d.users));
 
-// Размеры графика
 const candleWidth = 20;
 const gap = 40; 
 const totalCandles = data.length;
 const totalWidth = totalCandles * (candleWidth + gap) - gap;
 
-// Определим размер SVG:
 const chartLayout = document.querySelector('.chart-layout');
-const layoutHeight = chartLayout.clientHeight; // Высота на основе экрана
+const layoutHeight = chartLayout.clientHeight;
 
 const marginBottom = 30; 
 const marginTop = 20; 
@@ -154,11 +147,20 @@ function getCandleHeight(value) {
   return (value / maxValue) * chartHeight;
 }
 
+// Логика выбора цвета:
+// > предыдущего: зелёная
+// < предыдущего: красная
+// = предыдущему: серая
 function getCandleColor(currentValue, prevValue) {
-  if (prevValue === undefined || currentValue > prevValue) {
+  if (prevValue === undefined) {
+    // Первая свеча пусть будет нейтрального (серого) цвета
+    return "#999999";
+  } else if (currentValue > prevValue) {
     return "#00ff7f"; 
-  } else {
+  } else if (currentValue < prevValue) {
     return "#ff4f4f"; 
+  } else {
+    return "#999999";
   }
 }
 
@@ -219,13 +221,12 @@ function drawYAxis() {
     label.className = "label";
     label.textContent = Math.round(stepValue).toString();
     yAxis.appendChild(label);
-}
+  }
 }
 
 drawChart(data);
 drawYAxis();
 
-// Обновление верхних цифр (пример)
 document.getElementById('dailyGrowth').textContent = "+30";
 document.getElementById('totalUsers').textContent = "1051";
 </script>
