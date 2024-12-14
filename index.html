@@ -30,18 +30,19 @@
       height: 50px;
       box-sizing: border-box;
     }
-    .bot-name {
-      flex: 1; 
-      text-align: center; 
-      font-size: 16px;
-      font-weight: bold;
-      color: #ffffff; /* или любой другой цвет */
-}
 
     .header-panel .daily-growth {
       color: #00ff7f;
       font-weight: bold;
       font-size: 18px;
+    }
+
+    .header-panel .bot-name {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
     }
 
     .header-panel .total-users {
@@ -95,6 +96,13 @@
       font-size: 10px;
     }
 
+    /* Анимация для свечей */
+    /* Мы будем добавлять класс candle для свечей,
+       чтобы применить к ним transition */
+    rect.candle {
+      transition: all 0.7s ease;
+    }
+
     @media (max-width: 480px) {
       .header-panel {
         font-size: 14px;
@@ -104,11 +112,11 @@
 </head>
 <body>
 
-  <div class="header-panel">
-    <div class="daily-growth" id="dailyGrowth">+31</div>
-    <div class="bot-name" id="botName">Удалить фон</div>
-    <div class="total-users" id="totalUsers">1054</div>
-  </div>
+<div class="header-panel">
+  <div class="daily-growth" id="dailyGrowth">+30</div>
+  <div class="bot-name" id="botName">Удалить фон</div>
+  <div class="total-users" id="totalUsers">1051</div>
+</div>
 
 <div class="chart-layout">
   <div class="chart-container">
@@ -120,7 +128,7 @@
 </div>
 
 <script>
-// Пример данных: на 24 часа
+// Пример данных: 24 часа
 const data = [];
 for (let h = 0; h < 24; h++) {
   const hour = h.toString().padStart(2, '0') + ":00";
@@ -155,13 +163,9 @@ function getCandleHeight(value) {
   return (value / maxValue) * chartHeight;
 }
 
-// Логика выбора цвета:
-// > предыдущего: зелёная
-// < предыдущего: красная
-// = предыдущему: серая
 function getCandleColor(currentValue, prevValue) {
   if (prevValue === undefined) {
-    // Первая свеча пусть будет нейтрального (серого) цвета
+    // Первая свеча нейтральная (серая)
     return "#999999";
   } else if (currentValue > prevValue) {
     return "#00ff7f"; 
@@ -189,21 +193,28 @@ function drawChart(data) {
 
   const startX = 50; 
 
+  const rects = [];
+
   data.forEach((d, i) => {
     const prevValue = i > 0 ? data[i-1].users : undefined;
     const color = getCandleColor(d.users, prevValue);
     const candleHeight = getCandleHeight(d.users);
 
     const x = startX + i * (candleWidth + gap);
-    const y = xAxisY - candleHeight; 
 
+    // Изначально задаем высоту 0 и y = xAxisY (снизу),
+    // потом после рендера обновим
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", x);
-    rect.setAttribute("y", y);
+    rect.setAttribute("y", xAxisY); // start from baseline
     rect.setAttribute("width", candleWidth);
-    rect.setAttribute("height", candleHeight);
+    rect.setAttribute("height", 0);
     rect.setAttribute("fill", color);
+    rect.classList.add('candle'); // класс для анимации
     svg.appendChild(rect);
+
+    // Сохраним цель для последующей анимации
+    rects.push({element: rect, finalY: xAxisY - candleHeight, finalHeight: candleHeight});
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("x", x + candleWidth / 2);
@@ -213,6 +224,14 @@ function drawChart(data) {
     text.setAttribute("text-anchor", "middle");
     text.textContent = d.time;
     svg.appendChild(text);
+  });
+
+  // Запустим анимацию на следующем кадре
+  requestAnimationFrame(() => {
+    rects.forEach(r => {
+      r.element.setAttribute("y", r.finalY);
+      r.element.setAttribute("height", r.finalHeight);
+    });
   });
 }
 
@@ -235,9 +254,10 @@ function drawYAxis() {
 drawChart(data);
 drawYAxis();
 
-document.getElementById('dailyGrowth').textContent = "+31";
-document.getElementById('totalUsers').textContent = "1054";
+document.getElementById('dailyGrowth').textContent = "+30";
+document.getElementById('totalUsers').textContent = "1051";
 </script>
 
 </body>
 </html>
+
