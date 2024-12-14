@@ -221,6 +221,14 @@ function drawYAxis() {
     yAxis.appendChild(label);
   }
 }
+  const steps = 5;
+  for (let i = steps; i >= 0; i--) {
+  const stepValue = (maxValue / steps) * i;
+  const label = document.createElement("div");
+  label.className = "label";
+  label.textContent = Math.round(stepValue).toString();
+  yAxis.appendChild(label);
+}
 
 drawChart(data);
 drawYAxis();
