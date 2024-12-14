@@ -96,9 +96,6 @@
       font-size: 10px;
     }
 
-    /* Анимация для свечей */
-    /* Мы будем добавлять класс candle для свечей,
-       чтобы применить к ним transition */
     rect.candle {
       transition: all 0.7s ease;
     }
@@ -128,55 +125,76 @@
 </div>
 
 <script>
-// Пример данных: 24 часа
-const data = [];
-for (let h = 0; h < 24; h++) {
-  const hour = h.toString().padStart(2, '0') + ":00";
-  const users = Math.floor(Math.random() * 50);
-  data.push({ time: hour, users: users });
-}
+// Здесь вы вручную задаете данные по часам.
+// Формат: [{time: "HH:MM", users: число}, ...]
+const data = [
+  { time: "00:00", users: 2 },
+  { time: "01:00", users: 5 },
+  { time: "02:00", users: 10 },
+  { time: "03:00", users: 7 },
+  { time: "04:00", users: 3 },
+  { time: "05:00", users: 15 },
+  { time: "06:00", users: 11 },
+  { time: "07:00", users: 20 },
+  { time: "08:00", users: 4 },
+  { time: "09:00", users: 8 },
+  { time: "10:00", users: 12 },
+  { time: "11:00", users: 1 },
+  { time: "12:00", users: 5 },
+  { time: "13:00", users: 0 },
+  { time: "14:00", users: 6 },
+  { time: "15:00", users: 9 },
+  { time: "16:00", users: 15 },
+  { time: "17:00", users: 7 },
+  { time: "18:00", users: 3 },
+  { time: "19:00", users: 14 },
+  { time: "20:00", users: 2 },
+  { time: "21:00", users: 5 },
+  { time: "22:00", users: 10 },
+  { time: "23:00", users: 7 }
+];
 
 const chartContainer = document.querySelector('.chart-container');
 const svg = document.getElementById("chart");
-const maxValue = Math.max(...data.map(d => d.users));
-
-const candleWidth = 20;
-const gap = 40; 
-const totalCandles = data.length;
-const totalWidth = totalCandles * (candleWidth + gap) - gap;
-
 const chartLayout = document.querySelector('.chart-layout');
-const layoutHeight = chartLayout.clientHeight;
 
 const marginBottom = 30; 
 const marginTop = 20; 
-const chartHeight = layoutHeight - marginBottom - marginTop; 
 
-const viewWidth = Math.max(totalWidth + 100, chartContainer.clientWidth);
-svg.setAttribute('width', viewWidth);
-svg.setAttribute('height', layoutHeight);
+// Вычисляем максимальное значение после задания данных
+const maxValue = Math.max(...data.map(d => d.users));
 
-const svgHeight = layoutHeight;
+function drawChart(data, maxValue) {
+  const layoutHeight = chartLayout.clientHeight;
+  const chartHeight = layoutHeight - marginBottom - marginTop;
+  const candleWidth = 20;
+  const gap = 40; 
+  const totalCandles = data.length;
+  const totalWidth = totalCandles * (candleWidth + gap) - gap;
+  const viewWidth = Math.max(totalWidth + 100, chartContainer.clientWidth);
 
-function getCandleHeight(value) {
-  if (maxValue === 0) return 0;
-  return (value / maxValue) * chartHeight;
-}
+  svg.setAttribute('width', viewWidth);
+  svg.setAttribute('height', layoutHeight);
 
-function getCandleColor(currentValue, prevValue) {
-  if (prevValue === undefined) {
-    // Первая свеча нейтральная (серая)
-    return "#999999";
-  } else if (currentValue > prevValue) {
-    return "#00ff7f"; 
-  } else if (currentValue < prevValue) {
-    return "#ff4f4f"; 
-  } else {
-    return "#999999";
+  const svgHeight = layoutHeight;
+
+  function getCandleHeight(value) {
+    if (maxValue === 0) return 0;
+    return (value / maxValue) * chartHeight;
   }
-}
 
-function drawChart(data) {
+  function getCandleColor(currentValue, prevValue) {
+    if (prevValue === undefined) {
+      return "#999999";
+    } else if (currentValue > prevValue) {
+      return "#00ff7f"; 
+    } else if (currentValue < prevValue) {
+      return "#ff4f4f"; 
+    } else {
+      return "#999999";
+    }
+  }
+
   while (svg.firstChild) {
     svg.removeChild(svg.firstChild);
   }
@@ -192,7 +210,6 @@ function drawChart(data) {
   svg.appendChild(xAxis);
 
   const startX = 50; 
-
   const rects = [];
 
   data.forEach((d, i) => {
@@ -201,19 +218,15 @@ function drawChart(data) {
     const candleHeight = getCandleHeight(d.users);
 
     const x = startX + i * (candleWidth + gap);
-
-    // Изначально задаем высоту 0 и y = xAxisY (снизу),
-    // потом после рендера обновим
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", x);
-    rect.setAttribute("y", xAxisY); // start from baseline
+    rect.setAttribute("y", xAxisY);
     rect.setAttribute("width", candleWidth);
     rect.setAttribute("height", 0);
     rect.setAttribute("fill", color);
-    rect.classList.add('candle'); // класс для анимации
+    rect.classList.add('candle');
     svg.appendChild(rect);
 
-    // Сохраним цель для последующей анимации
     rects.push({element: rect, finalY: xAxisY - candleHeight, finalHeight: candleHeight});
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -226,7 +239,6 @@ function drawChart(data) {
     svg.appendChild(text);
   });
 
-  // Запустим анимацию на следующем кадре
   requestAnimationFrame(() => {
     rects.forEach(r => {
       r.element.setAttribute("y", r.finalY);
@@ -235,7 +247,7 @@ function drawChart(data) {
   });
 }
 
-function drawYAxis() {
+function drawYAxis(maxValue) {
   const yAxis = document.getElementById("yAxis");
   while (yAxis.firstChild) {
     yAxis.removeChild(yAxis.firstChild);
@@ -251,12 +263,10 @@ function drawYAxis() {
   }
 }
 
+drawChart(data, maxValue);
+drawYAxis(maxValue);
 
-
-
-drawChart(data);
-drawYAxis();
-
+// Обновляем верхние показатели при необходимости
 document.getElementById('dailyGrowth').textContent = "+31";
 document.getElementById('totalUsers').textContent = "1054";
 </script>
