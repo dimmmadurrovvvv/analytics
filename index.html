@@ -49,6 +49,19 @@
       color: #ffffff;
       font-weight: normal;
       font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .switch-graph-btn {
+      background: #2f2f2f;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 3px;
     }
 
     .chart-layout {
@@ -104,6 +117,9 @@
       .header-panel {
         font-size: 14px;
       }
+      .switch-graph-btn {
+        font-size: 12px;
+      }
     }
   </style>
 </head>
@@ -112,7 +128,9 @@
 <div class="header-panel">
   <div class="daily-growth" id="dailyGrowth">+0</div>
   <div class="bot-name" id="botName">Удалить фон</div>
-  <div class="total-users" id="totalUsers">1054</div>
+
+    <button class="switch-graph-btn" id="switchGraphBtn">Показать использования</button>
+
 </div>
 
 <div class="chart-layout">
@@ -125,9 +143,19 @@
 </div>
 
 <script>
+let showUsageGraph = false; // false - показываем уникальных пользователей, true - показываем использования
+
 const chartContainer = document.querySelector('.chart-container');
 const svg = document.getElementById("chart");
 const chartLayout = document.querySelector('.chart-layout');
+const switchGraphBtn = document.getElementById('switchGraphBtn');
+
+switchGraphBtn.addEventListener('click', () => {
+  showUsageGraph = !showUsageGraph;
+  switchGraphBtn.textContent = showUsageGraph ? "Показать уникальных" : "Показать использования";
+  fetchDataAndDraw();
+});
+
 const marginBottom = 30; 
 const marginTop = 20; 
 
@@ -233,7 +261,10 @@ function drawYAxis(maxValue) {
 
 async function fetchDataAndDraw() {
   try {
-    const response = await fetch('https://neiropulse.ru/api/candles');
+    const url = showUsageGraph 
+      ? 'https://neiropulse.ru/api/candles_usage' 
+      : 'https://neiropulse.ru/api/candles';
+    const response = await fetch(url);
     const newData = await response.json();
     if (!Array.isArray(newData)) return;
 
@@ -252,8 +283,8 @@ async function fetchDataAndDraw() {
 fetchDataAndDraw();
 setInterval(fetchDataAndDraw, 30000);
 
-// Можно обновлять totalUsers если есть данные о общем количестве
-document.getElementById('totalUsers').textContent = "-";
+// Обновляем totalUsers, если есть данные о общем числе
+// document.getElementById('totalUsers').textContent = "1054";
 </script>
 
 </body>
