@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>График подписчиков</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #121212;
+      color: #fff;
+    }
+
+    .header-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #1f1f1f;
+      font-size: 16px;
+    }
+
+    .header-panel .daily-growth {
+      color: #00ff7f; 
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .header-panel .total-users {
+      color: #ffffff;
+      font-weight: normal;
+      font-size: 16px;
+    }
+
+    /* Основной контейнер для графика и оси Y */
+    .chart-layout {
+      display: flex;
+      flex-direction: row;
+      background: #1e1e1e;
+      height: 350px;
+    }
+
+    .chart-container {
+      flex: 1;
+      overflow-x: scroll;
+      overflow-y: hidden;
+      position: relative;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      display: inline-block; /* ширина зависит от содержимого SVG */
+      height: 100%;
+    }
+
+    #chart {
+      display: block;
+      height: 100%;
+    }
+
+    /* Ось Y справа отдельно от скролла */
+    .y-axis {
+      width: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 10px 5px;
+      box-sizing: border-box;
+      pointer-events: none;
+      background: #1e1e1e; 
+      border-left: 1px solid #333;
+    }
+
+    .y-axis .label {
+      color: #ccc;
+      font-size: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .header-panel {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-panel">
+  <div class="daily-growth" id="dailyGrowth">+30</div>
+  <div class="total-users" id="totalUsers">1051</div>
+</div>
+
+<div class="chart-layout">
+  <div class="chart-container">
+    <div class="chart-wrapper">
+      <svg id="chart"></svg>
+    </div>
+  </div>
+  <div class="y-axis" id="yAxis"></div>
+</div>
+
+<script>
+// Пример данных на 24 часа
+const data = [];
+for (let h = 0; h < 24; h++) {
+  const hour = h.toString().padStart(2, '0') + ":00";
+  const users = Math.floor(Math.random() * 50);
+  data.push({ time: hour, users: users });
+}
+
+const chartContainer = document.querySelector('.chart-container');
+const svg = document.getElementById("chart");
+
+// Найдем максимальное значение
+const maxValue = Math.max(...data.map(d => d.users));
+
+// Размеры и параметры графика
+const candleWidth = 20;
+const gap = 40; 
+const totalCandles = data.length;
+const totalWidth = totalCandles * (candleWidth + gap) - gap;
+const marginBottom = 30; 
+const marginTop = 20; 
+const chartHeight = 350 - marginBottom - marginTop; // высота графика без отступов
+
+// Зададим ширину SVG исходя из количества данных
+const viewWidth = Math.max(totalWidth + 100, chartContainer.clientWidth);
+svg.setAttribute('width', viewWidth);
+svg.setAttribute('height', 350);
+
+const svgHeight = svg.clientHeight;
+
+// Перевод значения в высоту свечи
+function getCandleHeight(value) {
+  if (maxValue === 0) return 0;
+  return (value / maxValue) * chartHeight;
+}
+
+// Определение цвета
+function getCandleColor(currentValue, prevValue) {
+  if (prevValue === undefined || currentValue > prevValue) {
+    return "#00ff7f"; // зелёный
+  } else {
+    return "#ff4f4f"; // красный или при равенстве тоже вниз
+  }
+}
+
+function drawChart(data) {
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
+
+  const xAxisY = svgHeight - marginBottom;
+  const xAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  xAxis.setAttribute("x1", 0);
+  xAxis.setAttribute("y1", xAxisY);
+  xAxis.setAttribute("x2", viewWidth);
+  xAxis.setAttribute("y2", xAxisY);
+  xAxis.setAttribute("stroke", "#555");
+  xAxis.setAttribute("stroke-dasharray", "2,2");
+  svg.appendChild(xAxis);
+
+  const startX = 50; 
+
+  data.forEach((d, i) => {
+    const prevValue = i > 0 ? data[i-1].users : undefined;
+    const color = getCandleColor(d.users, prevValue);
+    const candleHeight = getCandleHeight(d.users);
+
+    const x = startX + i * (candleWidth + gap);
+    const y = xAxisY - candleHeight; 
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", candleWidth);
+    rect.setAttribute("height", candleHeight);
+    rect.setAttribute("fill", color);
+    svg.appendChild(rect);
+
+    // Подпись времени
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", x + candleWidth / 2);
+    text.setAttribute("y", svgHeight - 5);
+    text.setAttribute("fill", "#ccc");
+    text.setAttribute("font-size", "10");
+    text.setAttribute("text-anchor", "middle");
+    text.textContent = d.time;
+    svg.appendChild(text);
+  });
+}
+
+function drawYAxis() {
+  const yAxis = document.getElementById("yAxis");
+  while (yAxis.firstChild) {
+    yAxis.removeChild(yAxis.firstChild);
+  }
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const stepValue = (maxValue / steps) * i;
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = Math.round(stepValue).toString();
+    yAxis.appendChild(label);
+  }
+}
+
+drawChart(data);
+drawYAxis();
+
+// Обновление верхних цифр (пример)
+document.getElementById('dailyGrowth').textContent = "+30";
+document.getElementById('totalUsers').textContent = "1051";
+
+// При реальном использовании подставляйте данные из API и вызывайте drawChart(newData), drawYAxis().
+</script>
+
+</body>
+</html>
