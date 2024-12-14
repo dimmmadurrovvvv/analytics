@@ -254,17 +254,7 @@ const rect = document.getElementById('candle-09');
 rect.setAttribute('height', newHeight);
 rect.setAttribute('y', newYPosition);
 
-async function fetchDataAndDraw() {
-  const response = await fetch('http://5.35.29.25:5000/api/candles');
-  const newData = await response.json();
-  drawChart(newData);
-  drawYAxis(newData);
-}
 
-// Вызвать при загрузке страницы:
-fetchDataAndDraw();
-// Можно делать периодически:
-setInterval(fetchDataAndDraw, 30000);
 
 drawChart(data);
 drawYAxis();
