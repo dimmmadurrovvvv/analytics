@@ -2,15 +2,23 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Позволяем контенту занимать всю ширину, viewport-fit=cover для iOS fullscreen -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>График подписчиков</title>
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       font-family: sans-serif;
       background: #121212;
       color: #fff;
+      height: 100%;
+      overflow: hidden; /* чтобы не было лишних скроллов страницы */
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
     }
 
     .header-panel {
@@ -20,10 +28,13 @@
       padding: 10px;
       background: #1f1f1f;
       font-size: 16px;
+      /* фиксированная высота для расчёта */
+      height: 50px;
+      box-sizing: border-box;
     }
 
     .header-panel .daily-growth {
-      color: #00ff7f; 
+      color: #00ff7f;
       font-weight: bold;
       font-size: 18px;
     }
@@ -34,12 +45,14 @@
       font-size: 16px;
     }
 
-    /* Основной контейнер для графика и оси Y */
+    /* Основной контейнер: занимает оставшуюся часть экрана */
     .chart-layout {
+      flex: 1; 
       display: flex;
       flex-direction: row;
       background: #1e1e1e;
-      height: 350px;
+      height: calc(100vh - 50px); /* высота экрана минус панель */
+      box-sizing: border-box;
     }
 
     .chart-container {
@@ -51,7 +64,7 @@
 
     .chart-wrapper {
       position: relative;
-      display: inline-block; /* ширина зависит от содержимого SVG */
+      display: inline-block;
       height: 100%;
     }
 
@@ -60,7 +73,6 @@
       height: 100%;
     }
 
-    /* Ось Y справа отдельно от скролла */
     .y-axis {
       width: 40px;
       display: flex;
@@ -103,7 +115,7 @@
 </div>
 
 <script>
-// Пример данных на 24 часа
+// Пример данных
 const data = [];
 for (let h = 0; h < 24; h++) {
   const hour = h.toString().padStart(2, '0') + ":00";
@@ -114,37 +126,39 @@ for (let h = 0; h < 24; h++) {
 const chartContainer = document.querySelector('.chart-container');
 const svg = document.getElementById("chart");
 
-// Найдем максимальное значение
+// Найдём максимум
 const maxValue = Math.max(...data.map(d => d.users));
 
-// Размеры и параметры графика
+// Размеры графика
 const candleWidth = 20;
 const gap = 40; 
 const totalCandles = data.length;
 const totalWidth = totalCandles * (candleWidth + gap) - gap;
+
+// Определим размер SVG:
+const chartLayout = document.querySelector('.chart-layout');
+const layoutHeight = chartLayout.clientHeight; // Высота на основе экрана
+
 const marginBottom = 30; 
 const marginTop = 20; 
-const chartHeight = 350 - marginBottom - marginTop; // высота графика без отступов
+const chartHeight = layoutHeight - marginBottom - marginTop; 
 
-// Зададим ширину SVG исходя из количества данных
 const viewWidth = Math.max(totalWidth + 100, chartContainer.clientWidth);
 svg.setAttribute('width', viewWidth);
-svg.setAttribute('height', 350);
+svg.setAttribute('height', layoutHeight);
 
-const svgHeight = svg.clientHeight;
+const svgHeight = layoutHeight;
 
-// Перевод значения в высоту свечи
 function getCandleHeight(value) {
   if (maxValue === 0) return 0;
   return (value / maxValue) * chartHeight;
 }
 
-// Определение цвета
 function getCandleColor(currentValue, prevValue) {
   if (prevValue === undefined || currentValue > prevValue) {
-    return "#00ff7f"; // зелёный
+    return "#00ff7f"; 
   } else {
-    return "#ff4f4f"; // красный или при равенстве тоже вниз
+    return "#ff4f4f"; 
   }
 }
 
@@ -181,7 +195,6 @@ function drawChart(data) {
     rect.setAttribute("fill", color);
     svg.appendChild(rect);
 
-    // Подпись времени
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("x", x + candleWidth / 2);
     text.setAttribute("y", svgHeight - 5);
@@ -215,8 +228,6 @@ drawYAxis();
 // Обновление верхних цифр (пример)
 document.getElementById('dailyGrowth').textContent = "+30";
 document.getElementById('totalUsers').textContent = "1051";
-
-// При реальном использовании подставляйте данные из API и вызывайте drawChart(newData), drawYAxis().
 </script>
 
 </body>
